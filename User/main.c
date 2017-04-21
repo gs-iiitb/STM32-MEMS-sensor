@@ -24,9 +24,13 @@
 #include "tm_stm32f4_disco.h"
 #include "tm_stm32f4_delay.h"
 #include "tm_stm32f4_lis302dl_lis3dsh.h"
-
+#include "tm_stm32f4_servo.h"
 /* Accelerometer data structure */
 TM_LIS302DL_LIS3DSH_t Axes_Data;
+long map(long x, long in_min, long in_max, long out_min, long out_max)
+{
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
 int main(void) {	
 	/* Initialize system */
 	SystemInit();
@@ -59,103 +63,28 @@ int main(void) {
 	}
 	
 	/* Delay for 2 seconds */
-	Delayms(2000);
+	//Delayms(2000);
+	TM_SERVO_t Servo1, Servo2;
+	TM_SERVO_Init(&Servo1, TIM2, TM_PWM_Channel_3, TM_PWM_PinsPack_2);
+	
+	/* Initialize servo 2, TIM2, Channel 2, Pinspack 2 = PB3 */
+	TM_SERVO_Init(&Servo2, TIM2, TM_PWM_Channel_2, TM_PWM_PinsPack_2);
+	//TM_SERVO_SetDegrees(&Servo1, 0);
+	
 
+	TM_SERVO_SetDegrees(&Servo1, 110);
+	TM_SERVO_SetDegrees(&Servo2, 0);
+	Delay(10000);
+	TM_SERVO_SetDegrees(&Servo2, 100);
+	Delay(1000);
 	while (1) {
 		/* Read axes data from initialized accelerometer */
 		TM_LIS302DL_LIS3DSH_ReadAxes(&Axes_Data);
-		
-		/* Turn LEDS on or off */
-		/* Check X axes */
-		int c=0;
-		if(Axes_Data.X > 50)
-		{
-			if(Axes_Data.Y > 50)
-				c=1;
-			else if(Axes_Data.Y < -50)
-				c=2;
-			else
-				c=3;
-		}
-		if(Axes_Data.X < -50)
-		{
-			if(Axes_Data.Y > 50)
-				c=4;
-			else if(Axes_Data.Y < -50)
-				c=5;
-			else
-				c=6;
-		}
-		if(Axes_Data.Y > 50)
-		{
-			if(Axes_Data.X > 50)
-				c=1;
-			else if(Axes_Data.X < -50)
-				c=4;
-			else
-				c=7;
-		}
-		if(Axes_Data.Y < -50)
-		{
-			if(Axes_Data.X > 50)
-				c=2;
-			else if(Axes_Data.X < -50)
-				c=5;
-			else
-				c=8;
-		}
-		switch(c)
-		{
-			case 0: TM_DISCO_LedOff(LED_ALL);
-							break;
-			case 1: TM_DISCO_LedToggle(LED_RED);
-							TM_DISCO_LedToggle(LED_ORANGE);
-							TM_DISCO_LedOff(LED_BLUE);
-							TM_DISCO_LedOff(LED_GREEN);
-							Delay(500*(1200-Axes_Data.X));
-							break;
-			case 2: TM_DISCO_LedToggle(LED_RED);
-							TM_DISCO_LedToggle(LED_BLUE);
-							TM_DISCO_LedOff(LED_ORANGE);
-							TM_DISCO_LedOff(LED_GREEN);
-							Delay(500*(1200-Axes_Data.X));
-							break;
-			case 3: TM_DISCO_LedToggle(LED_RED);
-							TM_DISCO_LedOff(LED_ORANGE);
-							TM_DISCO_LedOff(LED_GREEN);
-							TM_DISCO_LedOff(LED_BLUE);		
-							Delay(500*(1200-Axes_Data.X));
-							break;
-			case 4: TM_DISCO_LedToggle(LED_GREEN);
-							TM_DISCO_LedToggle(LED_ORANGE);
-							TM_DISCO_LedOff(LED_RED);
-							TM_DISCO_LedOff(LED_BLUE);	
-							Delay(500*(1200+Axes_Data.X));
-							break;
-			case 5: TM_DISCO_LedToggle(LED_GREEN);
-							TM_DISCO_LedToggle(LED_BLUE);
-							TM_DISCO_LedOff(LED_RED);
-							TM_DISCO_LedOff(LED_ORANGE);
-							Delay(500*(1200+Axes_Data.X));
-							break;
-			case 6: TM_DISCO_LedToggle(LED_GREEN);
-							TM_DISCO_LedOff(LED_RED);
-							TM_DISCO_LedOff(LED_ORANGE);
-							TM_DISCO_LedOff(LED_BLUE);
-							Delay(500*(1200+Axes_Data.X));
-							break;
-			case 7: TM_DISCO_LedToggle(LED_ORANGE);
-							TM_DISCO_LedOff(LED_RED);
-							TM_DISCO_LedOff(LED_GREEN);
-							TM_DISCO_LedOff(LED_BLUE);
-							Delay(500*(1200-Axes_Data.Y));
-							break;
-			case 8: TM_DISCO_LedToggle(LED_BLUE);
-							TM_DISCO_LedOff(LED_RED);
-							TM_DISCO_LedOff(LED_GREEN);
-							TM_DISCO_LedOff(LED_ORANGE);
-							Delay(500*(1200+Axes_Data.Y));
-							break;
-		}
+		int x=map(Axes_Data.X,-1024,1024,90,114);
+		TM_SERVO_SetDegrees(&Servo2, x);
+
+		int y=map(Axes_Data.Y,-1024,1024,70,110);
+		TM_SERVO_SetDegrees(&Servo1, y);
+
 	}
 }
